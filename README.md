@@ -60,7 +60,7 @@ The test suite contains **69 requests** organized into **6 submodules**:
 | :--- | :--- | :---: |
 | **00 - Player Authentication** | Firebase Auth login & JWT retrieval | 1 |
 | **01 - Song Discovery** | Default feeds, search queries, pagination, and boundary parameters | 26 |
-| **02 - Voting** | Song/pack voting, duplicate vote handling, unapproved song restrictions | 13 |
+| **02 - Voting** | Song/pack voting, duplicate vote handling, unapproved song restrictions | 15 |
 | **03 - Hash Verification** | SSC chart hash validation and route security checks | 15 |
 | **04 - Song Download** | Downloading approved content and handling non-existent songs | 6 |
-| **05 - HUB & Community Packs** | Browsing featured and community-submitted song packs | 8 |
+| **05 - HUB & Community Packs** | Browsing featured and community-submitted song packs | 6 |
