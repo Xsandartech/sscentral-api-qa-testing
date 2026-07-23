@@ -30,7 +30,7 @@ During the initial test execution, 46 assertions failed out of 137 due to backen
 
 ![Initial Audit Newman Summary](assets/initial-run-summary.jpg)
 
-🔗 **[View Full Interactive Baseline Report (Live HTML)](https://YOUR_GITHUB_USERNAME.github.io/sscentral-api-qa-testing/reports/SSCentral-In-Game-API-Initial-Report.html)**
+🔗 **[View Full Interactive Baseline Report (Live HTML)](https://xsandartech.github.io/sscentral-api-qa-testing/reports/SSCentral-In-Game-API-Initial-Report.html)**
 
 ---
 
@@ -39,7 +39,7 @@ After fixing backend bugs and updating test script assertions, the full regressi
 
 ![Regression Run Newman Summary](assets/regression-run-summary.jpg)
 
-🔗 **[View Full Interactive Regression Report (Live HTML)](https://YOUR_GITHUB_USERNAME.github.io/sscentral-api-qa-testing/reports/SSCentral-In-Game-API-Regression-Report.html)**
+🔗 **[View Full Interactive Regression Report (Live HTML)](https://xsandartech.github.io/sscentral-api-qa-testing/reports/SSCentral-In-Game-API-Regression-Report.html)**
 
 ---
 
