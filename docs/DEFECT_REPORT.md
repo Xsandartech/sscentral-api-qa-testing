@@ -213,7 +213,7 @@ Full song list returned without applying pagination limits.
 
 ---
 
-## Final Outcome
+## ✅ Final Outcome
 
 The initial Newman test run found **46 failed test cases out of 137**.
 
