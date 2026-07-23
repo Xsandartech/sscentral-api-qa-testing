@@ -28,7 +28,7 @@ The QA cycle consisted of an initial baseline audit followed by failure analysis
 ### Phase 1: Initial Baseline Audit (46 Failures Identified)
 During the initial test execution, 46 assertions failed out of 137 due to backend defects and test assertion mismatches.
 
-![Initial Audit Newman Summary](assets/initial-run-summary.png)
+![Initial Audit Newman Summary](assets/initial-run-summary.jpg)
 
 🔗 **[View Full Interactive Baseline Report (Live HTML)](https://YOUR_GITHUB_USERNAME.github.io/sscentral-api-qa-testing/reports/SSCentral-In-Game-API-Initial-Report.html)**
 
@@ -37,7 +37,7 @@ During the initial test execution, 46 assertions failed out of 137 due to backen
 ### Phase 2: Final Regression Run (100% Pass Rate)
 After fixing backend bugs and updating test script assertions, the full regression suite was executed, achieving a 100% pass rate.
 
-![Regression Run Newman Summary](assets/regression-run-summary.png)
+![Regression Run Newman Summary](assets/regression-run-summary.jpg)
 
 🔗 **[View Full Interactive Regression Report (Live HTML)](https://YOUR_GITHUB_USERNAME.github.io/sscentral-api-qa-testing/reports/SSCentral-In-Game-API-Regression-Report.html)**
 
