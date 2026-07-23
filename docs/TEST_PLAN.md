@@ -29,10 +29,10 @@ The test suite focuses on the **In-Game Module**, which contains the main featur
 | :--- | :--- | :--- | :--- |
 | **00** | **Player Authentication** | Handles Firebase authentication and retrieves the player JWT used by protected endpoints. | 1 |
 | **01** | **Song Discovery** | Tests song listing, search queries, sorting, pagination, and boundary limits. | 26 |
-| **02** | **Voting** | Validates song and pack voting, duplicate votes, and content status restrictions. | 13 |
+| **02** | **Voting** | Validates song and pack voting, duplicate votes, and content status restrictions. | 15 |
 | **03** | **Hash Verification** | Tests SSC chart hash verification and authentication enforcement. | 15 |
 | **04** | **Song Download** | Checks song file download permissions and error handling. | 6 |
-| **05** | **HUB & Community Packs** | Tests browsing of featured and community song packs. | 8 |
+| **05** | **HUB & Community Packs** | Tests browsing of featured and community song packs. | 6 |
 | **Total** | **Full In-Game Suite** | **Complete In-Game API test coverage.** | **69 Requests** |
 
 > **Note:** The suite contains **69 API requests** and **137 assertions**. A single API request can contain multiple assertions to validate status codes, response data, schemas, and business rules.
