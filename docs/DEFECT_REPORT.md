@@ -10,17 +10,17 @@ The selected cases include **four actual API defects** and **one test assertion 
 
 | ID | Title | Test Case | Severity | Type | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| [**BUG-001**](#-bug-001-unauthenticated-request-returns-http-500-instead-of-401) | Unauthenticated request returns HTTP 500 | TC-A02 | High | Security / Authentication | Fixed |
-| [**BUG-002**](#-bug-002-negative-limit-parameter-accepted-with-http-200-ok) | Negative limit parameter accepted with HTTP 200 | TC-A10 | Medium | Input Validation / Boundary Testing | Fixed |
-| [**BUG-003**](#-bug-003-hash-verification-bypasses-authentication) | Hash verification bypasses authentication | TC-C09 | Critical | Security / Authentication | Fixed |
-| [**BUG-004**](#-bug-004-voting-allowed-on-unapproved-content) | Voting allowed on unapproved content | TC-B12 | High | Business Logic / Authorization | Fixed |
-| [**TC-A15**](#-tc-a15-assertion-mismatch-in-least-liked-sort) | Assertion mismatch on sort filter | TC-A15 | N/A | Test Design | Corrected |
+| [**BUG-001**](#bug-001-unauthenticated-request-returns-http-500-instead-of-401) | Unauthenticated request returns HTTP 500 | TC-A02 | High | Security / Authentication | Fixed |
+| [**BUG-002**](#bug-002-negative-limit-parameter-accepted-with-http-200-ok) | Negative limit parameter accepted with HTTP 200 | TC-A10 | Medium | Input Validation / Boundary Testing | Fixed |
+| [**BUG-003**](#bug-003-hash-verification-bypasses-authentication) | Hash verification bypasses authentication | TC-C09 | Critical | Security / Authentication | Fixed |
+| [**BUG-004**](#bug-004-voting-allowed-on-unapproved-content) | Voting allowed on unapproved content | TC-B12 | High | Business Logic / Authorization | Fixed |
+| [**TC-A15**](#tc-a15-assertion-mismatch-in-least-liked-sort) | Assertion mismatch on sort filter | TC-A15 | N/A | Test Design | Corrected |
 
 ---
 
 ## Detailed Reports
 
-### BUG-001: Unauthenticated Request Returns HTTP 500 Instead of 401
+### 🐛 BUG-001: Unauthenticated Request Returns HTTP 500 Instead of 401
 
 | Field | Details |
 | :--- | :--- |
@@ -63,7 +63,7 @@ The selected cases include **four actual API defects** and **one test assertion 
 
 ---
 
-### BUG-002: Negative Limit Parameter Accepted With HTTP 200 OK
+### 🐛 BUG-002: Negative Limit Parameter Accepted With HTTP 200 OK
 
 | Field | Details |
 | :--- | :--- |
@@ -106,7 +106,7 @@ Full song list returned without applying pagination limits.
 
 ---
 
-### BUG-003: Hash Verification Bypasses Authentication
+### 🐛 BUG-003: Hash Verification Bypasses Authentication
 
 | Field | Details |
 | :--- | :--- |
@@ -175,7 +175,7 @@ Full song list returned without applying pagination limits.
 
 ---
 
-### TC-A15: Assertion Mismatch in Least-Liked Sort
+### 🐞 TC-A15: Assertion Mismatch in Least-Liked Sort
 
 | Field | Details |
 | :--- | :--- |
