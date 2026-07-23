@@ -1,0 +1,4310 @@
+{
+  "info": {
+    "_postman_id": "9fe7cca6-1374-459b-b978-79e6703e4fee",
+    "name": "SSCentral - In-Game API",
+    "description": "## SSCentral – In-Game API\n\nThis collection contains the full suite of test cases for the **SSCentral In-Game API** — the backend API used by the _**FiveSteps: Rhythm Game**_ client to interact with the _**SSCentral**_ platform. It covers player authentication, song discovery, voting, hash verification, song downloading, and community pack browsing.\n\n### Folders\n\n| # | Folder | Description |\n| --- | --- | --- |\n| 00 | **Player Authentication** | Handles Firebase-based player login, providing the JWT token used to authenticate subsequent requests. |\n| 01 | **Song Discovery** | Tests the song discovery endpoint across a wide range of scenarios: default queries, filtering by ID, text search, pagination parameters, and edge cases such as unapproved songs or non-existent IDs. |\n| 02 | **Voting** | Covers the song voting system, including casting votes, handling duplicate votes, voting on unapproved or non-existent songs, and authentication enforcement. |\n| 03 | **Hash Verification** | Validates the chart/SSC hash verification endpoint, testing approved and unapproved hashes, hashes from unapproved packs, non-existent hashes, and authentication edge cases. |\n| 04 | **Song Download** | Tests song download endpoints, including valid downloads, unapproved content, non-existent songs, and authentication requirements. |\n| 05 | **HUB & Community Packs** | Tests endpoints related to browsing HUB-featured and community-submitted song packs, including approved and unapproved pack scenarios. |\n\n### Environment\n\nAll requests are designed to run against the `SSCENTRAL-LOCAL` environment, which provides variables such as `base_url`, `FIREBASE_API_KEY`, player credentials, and pre-seeded song/pack/hash IDs for consistent and repeatable test execution.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "56769772",
+    "_collection_link": "https://go.postman.co/collection/56769772-9fe7cca6-1374-459b-b978-79e6703e4fee?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "00 - Player Authentication",
+      "item": [
+        {
+          "name": "Login Player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse the response JSON from Firebase\r",
+                  "const responseData = pm.response.json();\r",
+                  "\r",
+                  "// Check if Firebase returned a valid idToken\r",
+                  "if (responseData.idToken) {\r",
+                  "    // Save the token directly into your active environment variable\r",
+                  "    pm.environment.set(\"player1_jwt_token\", responseData.idToken);\r",
+                  "    console.log(\"player1_jwt_token updated successfully!\");\r",
+                  "} else {\r",
+                  "    console.error(\"❌ Failed to retrieve idToken from Firebase response.\");\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{player1_email}}\",\r\n  \"password\": \"{{player1_password}}\",\r\n  \"returnSecureToken\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={{FIREBASE_API_KEY}}",
+              "protocol": "https",
+              "host": [
+                "identitytoolkit",
+                "googleapis",
+                "com"
+              ],
+              "path": [
+                "v1",
+                "accounts:signInWithPassword"
+              ],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{FIREBASE_API_KEY}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Handles player authentication for the FiveSteps: Rhythm Game client via Firebase.\n\nThis folder contains the login request that authenticates a player using their email and password against the Firebase Identity Toolkit. On success, it captures and stores the JWT token returned by Firebase, which is then used as a Bearer token to authorize all subsequent requests in this collection.\n\n**Endpoint used:** `POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword`"
+    },
+    {
+      "name": "01 - Song Discovery",
+      "item": [
+        {
+          "name": "TC-A01 - Default Song Discovery Query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response contains data array, currentPage, and limit\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"data\").that.is.an(\"array\");\r",
+                  "    pm.expect(responseData).to.have.property(\"currentPage\", 1);\r",
+                  "    pm.expect(responseData).to.have.property(\"limit\", 24);\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\").that.is.a(\"boolean\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A02 - Default Song Discovery Query Without Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify Error JSON Structure & Message\r",
+                  "pm.test(\"Response returns success false and unauthorized error\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A03 - Discover Song by Valid ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify requested song ID exists in response\r",
+                  "pm.test(\"Response returns the correct single song record\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?id={{approved_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{approved_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A04 - Discover Non-Existent Song ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code check (404 Not Found or 200 with empty data array)\r",
+                  "pm.test(\"Status code is 404 Not Found or 200 with empty data\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify appropriate response payload structure\r",
+                  "pm.test(\"Response handles missing song gracefully\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?id={{non_existent_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{non_existent_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A05 - Discover Unapproved Song ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code check (403 Forbidden, 404 Not Found, or 200 with empty array)\r",
+                  "pm.test(\"Restricts access to pending moderation content\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Unapproved/pending song is filtered out (empty data array)\r",
+                  "pm.test(\"Pending song is hidden from public discovery\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?id={{unapproved_pack_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{unapproved_pack_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A06 - Discover Song in Unapproved Pack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code check (403 Forbidden, 404 Not Found, or 200 with empty array)\r",
+                  "pm.test(\"Restricts access to pending moderation content\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Unapproved/pending song is filtered out (empty data array)\r",
+                  "pm.test(\"Pending song is hidden from public discovery\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?id={{song_id_unapproved_pack}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{song_id_unapproved_pack}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A07 - Text Search with Keyword",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify search returns matching song results\r",
+                  "pm.test(\"Search query returns matching songs\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "    \r",
+                  "    // Verify every returned song matches the search term in title or artist\r",
+                  "    responseData.data.forEach(song => {\r",
+                  "        const matchesTitle = song.title.toLowerCase().includes(\"beethoven\");\r",
+                  "        const matchesArtist = song.artist.toLowerCase().includes(\"beethoven\");\r",
+                  "        pm.expect(matchesTitle || matchesArtist).to.be.true;\r",
+                  "    });\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?q=Beethoven",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Beethoven"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A08 - Text Search with Non-Matching Keyword",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify non-matching search returns an empty data array gracefully\r",
+                  "pm.test(\"Search query with no matches returns empty data array\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"currentPage\", 1);\r",
+                  "    pm.expect(responseData).to.have.property(\"limit\", 24);\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\", false);\r",
+                  "    \r",
+                  "    // Assert data array is present and completely empty\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?q=nonexistentkeyword12345",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "nonexistentkeyword12345"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A09 - Search with Query and Song ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify ID takes precedence over text search query\r",
+                  "pm.test(\"ID parameter takes precedence and returns exact matching song\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "    \r",
+                  "    // Verify the returned record is strictly the song matching the requested ID\r",
+                  "    const song = responseData.data[0];\r",
+                  "    pm.expect(song.id).to.eql(pm.environment.get(\"approved_song_id\"));\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?q=Beethoven&id={{approved_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Beethoven"
+                },
+                {
+                  "key": "id",
+                  "value": "{{approved_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A10 - Invalid Negative Limit Parameter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 400 Bad Request\r",
+                  "pm.test(\"Status code is 400 Bad Request\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify Error JSON Structure & Message\r",
+                  "pm.test(\"Response returns success false and expected error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?limit=-1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "-1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A11 - Invalid Negative Page Parameter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 400 Bad Request\r",
+                  "pm.test(\"Status code is 400 Bad Request\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify Error JSON Structure & Message\r",
+                  "pm.test(\"Response returns success false and expected error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?page=-1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "-1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A12 - Out of Bounds Page Parameter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify out-of-bounds page returns an empty data array gracefully\r",
+                  "pm.test(\"Out-of-bounds page returns empty data array and hasMore false\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\", false);\r",
+                  "    \r",
+                  "    // Expect empty data array when page number exceeds available results\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?page=999999999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "999999999999"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A13 - Search with Popularity Sort (Weekly Descending)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify search results are returned and sorted\r",
+                  "pm.test(\"Response returns matching songs for query and valid pagination\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?q=BanYa&sort=plays&time=week&order=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "BanYa"
+                },
+                {
+                  "key": "sort",
+                  "value": "plays"
+                },
+                {
+                  "key": "time",
+                  "value": "week"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A14 - Deep Pagination with All-Time Downloads Sort",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify pagination metadata and empty array for deep page\r",
+                  "pm.test(\"Response validates deep pagination parameters gracefully\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"currentPage\", 3);\r",
+                  "    pm.expect(responseData).to.have.property(\"limit\", 9);\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\", false);\r",
+                  "    \r",
+                  "    // Page 3 with limit 9 exceeds available seed songs, so array should be empty\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?sort=downloads&time=any&page=3&limit=9",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "downloads"
+                },
+                {
+                  "key": "time",
+                  "value": "any"
+                },
+                {
+                  "key": "page",
+                  "value": "3"
+                },
+                {
+                  "key": "limit",
+                  "value": "9"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A15 - Sort by Least-Liked Songs with All time (DESC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify songs are returned and sorted by likes in desc order\r",
+                  "pm.test(\"Response returns songs sorted by likes (most-liked first)\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    \r",
+                  "    // 1. Must NOT be empty (Must fail if [] is returned)\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?sort=likes&time=any&order=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "likes"
+                },
+                {
+                  "key": "time",
+                  "value": "any"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A16 - Recently Modified Songs (6-Month Window)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify 6 months window excludes songs older than 180 days\r",
+                  "pm.test(\"Returns exactly 6 songs updated within the 6-month window\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\");\r",
+                  "    pm.expect(responseData.data.length).to.eql(6);\r",
+                  "    \r",
+                  "    // Ensure 6-month-old songs (Love is a Danger Zone & Turkey March) are excluded\r",
+                  "    const titles = responseData.data.map(song => song.title);\r",
+                  "    pm.expect(titles).to.not.include(\"Love is a Danger Zone\");\r",
+                  "    pm.expect(titles).to.not.include(\"Turkey March\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?sort=modified&time=6months",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "modified"
+                },
+                {
+                  "key": "time",
+                  "value": "6months"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A17 - Songs Uploaded Within Past Year Window",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify songs uploaded within the 1-year window are returned\r",
+                  "pm.test(\"Response returns active approved songs uploaded within the last year\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "    \r",
+                  "    // Expect all 8 approved public songs created in 2026 to be included\r",
+                  "    pm.expect(responseData.data.length).to.eql(8);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?sort=upload&time=year",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "upload"
+                },
+                {
+                  "key": "time",
+                  "value": "year"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A18 - Excessive Limit Parameter (Anti-DoS Cap)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify excessive limit is capped at maximum threshold (50)\r",
+                  "pm.test(\"Response clamps excessive limit parameter to maximum allowed limit (50)\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"limit\");\r",
+                  "    \r",
+                  "    // Validate limit is clamped to 50 instead of returning 999999\r",
+                  "    pm.expect(responseData.limit).to.be.at.most(50);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?limit=999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "999999"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A19 - Invalid Non-Numeric Pagination Parameters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 400 Bad Request\r",
+                  "pm.test(\"Status code is 400 Bad Request for non-numeric params\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify Error Response\r",
+                  "pm.test(\"Returns success false and error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?page=abc&limit=xyz",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "abc"
+                },
+                {
+                  "key": "limit",
+                  "value": "xyz"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A20 - Invalid Sort Parameter Field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify graceful fallback response structure\r",
+                  "pm.test(\"Falls back safely to default song list on unknown sort parameter\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?sort=invalid_field",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "invalid_field"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A21 - Invalid Order Parameter Value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify default order fallback\r",
+                  "pm.test(\"Falls back safely to default sorting order\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?sort=likes&order=invalid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "likes"
+                },
+                {
+                  "key": "order",
+                  "value": "invalid"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A22 - Unsupported Time Window Parameter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify fallback response structure\r",
+                  "pm.test(\"Falls back safely to default time filter\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?sort=plays&time=everytime",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "plays"
+                },
+                {
+                  "key": "time",
+                  "value": "everytime"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A23 - SQL Wildcard Escaping (% or _)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify SQL wildcard % does not return all songs\r",
+                  "pm.test(\"Wildcard % is sanitized and does not return full song list\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\");\r",
+                  "    \r",
+                  "    // Unless a song literally has '%' in its title/artist, array should be empty\r",
+                  "    pm.expect(responseData.data).to.be.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?q=%",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "%"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A24 - Whitespace-Only Search Query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify whitespace query is trimmed and returns an empty list\r",
+                  "pm.test(\"Whitespace query is trimmed and returns empty array\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?q=%20%20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "%20%20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A25 - SQL Injection Defense / Sanitization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK (no 500 SQL syntax crash)\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify SQL Injection payload is neutralized and returns empty array\r",
+                  "pm.test(\"SQL injection attempt is sanitized and does not dump database\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.data).to.be.an(\"array\");\r",
+                  "    \r",
+                  "    // Parameterized binding ensures 0 songs match the literal string \"' OR '1'='1\"\r",
+                  "    pm.expect(responseData.data).to.be.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover?q=' OR '1'='1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "' OR '1'='1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-A26 - Default Song Discovery Query With Invalid JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify Error JSON Structure & Message\r",
+                  "pm.test(\"Response returns success false and unauthorized error\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_invalid_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/discover",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "discover"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Tests the song discovery endpoint (`GET /api/v2/songs/discover`) across a comprehensive range of scenarios to ensure correct behavior under all expected and edge-case conditions.\n\n**Coverage includes:**\n\n- **Default queries** – Authenticated and unauthenticated requests with no parameters (TC-A01, TC-A02, TC-A26)\n    \n- **ID-based lookup** – Fetching songs by valid ID, non-existent ID, unapproved song ID, and songs belonging to unapproved packs (TC-A03 to TC-A06)\n    \n- **Text search** – Keyword matching, non-matching keywords, combined query + ID, whitespace-only input, and SQL wildcard/injection defense (TC-A07 to TC-A09, TC-A23 to TC-A25)\n    \n- **Pagination** – Negative, non-numeric, out-of-bounds, and excessive limit/page values (TC-A10 to TC-A12, TC-A18, TC-A19)\n    \n- **Sorting & filtering** – Sorting by plays, downloads, likes, modified date, and upload date across various time windows (weekly, monthly, 6-month, yearly, all-time) with ascending/descending order (TC-A13 to TC-A17)\n    \n- **Invalid parameters** – Unsupported sort fields, invalid order values, and unsupported time window values (TC-A20 to TC-A22)\n    \n\n**Endpoint:** `GET {{base_url}}/api/v2/songs/discover`"
+    },
+    {
+      "name": "02 - Voting",
+      "item": [
+        {
+          "name": "TC-B01 - Register Positive 'Like' Vote",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify success object and 'liked' action\r",
+                  "pm.test(\"Vote registered successfully as 'liked'\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"action\", \"liked\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B02 - Register Duplicate 'Like' Vote",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify success object and 'liked' action\r",
+                  "pm.test(\"Vote registered successfully as 'liked'\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"action\", \"liked\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B03 - Switch Vote to 'Dislike'",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify vote switched to 'disliked'\r",
+                  "pm.test(\"Vote successfully updated to 'disliked'\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"action\", \"disliked\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": -1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B04 - Remove / Cancel Vote (Unvote)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify vote was removed/unvoted\r",
+                  "pm.test(\"Vote successfully cancelled / unvoted\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"action\", \"removed\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 0\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B05 - Invalid Vote Value Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 400 Bad Request\r",
+                  "pm.test(\"Status code is 400 Bad Request for out-of-range vote value\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns success false and error details\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 2\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B06 - Missing Mandatory Vote Action Parameters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 400 Bad Request\r",
+                  "pm.test(\"Status code is 400 Bad Request\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response for missing mandatory vote fields\r",
+                  "pm.test(\"Returns bad request error for missing mandatory vote parameters\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B07 - Retrieve User's Active Vote Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify active voting state structure\r",
+                  "pm.test(\"Returns user's active vote record\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"vote\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{liked_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{liked_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B08 - Retrieve User's Non-Existent Vote Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 404 Not Found\r",
+                  "pm.test(\"Status code is 404 Not Found\", function () {\r",
+                  "    pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns error details for non-existent song ID\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{non_existent_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{non_existent_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B09 - Retrieve User' Unapproved Song Vote Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for unapproved songs\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns error details for non-existent song ID\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{not_approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{not_approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B10 - Retrieve User' Unapproved Pack Vote Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for unapproved pack\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns error details for non-existent song ID\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{song_id_unapproved_pack}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{song_id_unapproved_pack}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B11 - Vote on Unapproved Pack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for pending moderation song\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns access denied error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{song_id_unapproved_pack}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{song_id_unapproved_pack}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B12 - Vote on Unapproved Song",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for pending moderation song\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns access denied error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{not_approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{not_approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B13 - Vote on Non-Existent Song ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 404 Not Found\r",
+                  "pm.test(\"Status code is 404 Not Found\", function () {\r",
+                  "    pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns error detail for missing song\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{non_existent_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{non_existent_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B14 - Vote Without Authentication",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized when missing token\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns unauthorized error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-B15 - Vote With Invalid JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized when missing token\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns unauthorized error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_invalid_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vote\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "vote"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "This folder contains all test cases related to the **Song Voting** feature of the In-Game API (`/api/v2/songs/:id/vote`).\n\nIt covers the full voting lifecycle and edge cases, organized into two main areas:\n\n**Vote Submission (POST)**\n\n- Registering a positive (`like`) vote on an approved song\n    \n- Handling duplicate vote attempts\n    \n- Switching an existing vote to `dislike`\n    \n- Removing / cancelling an active vote (unvote)\n    \n- Validation of invalid or missing vote action parameters\n    \n\n**Vote Retrieval (GET)**\n\n- Fetching a user's active vote record for a song\n    \n- Retrieving a vote record for a non-existent song\n    \n- Retrieving vote records for unapproved songs and songs in unapproved packs\n    \n\n**Authorization & Access Control**\n\n- Voting without authentication (no JWT)\n    \n- Voting with an invalid JWT token\n    \n- Voting on non-existent song IDs\n    \n- Voting on unapproved songs or songs belonging to unapproved packs"
+    },
+    {
+      "name": "03 - Hash Verification",
+      "item": [
+        {
+          "name": "TC-C01 - Retrieve Song Charts & Difficulty Levels",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify success status and charts_data schema\r",
+                  "pm.test(\"Returns success true and valid charts_data array\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData.charts_data).to.be.an(\"array\").that.is.not.empty;\r",
+                  "    \r",
+                  "    const firstChart = responseData.charts_data[0];\r",
+                  "    pm.expect(firstChart).to.have.property(\"chartindex\");\r",
+                  "    pm.expect(firstChart).to.have.property(\"charthash\");\r",
+                  "    pm.expect(firstChart).to.have.property(\"stepstype\");\r",
+                  "    pm.expect(firstChart).to.have.property(\"meter\");\r",
+                  "    pm.expect(firstChart).to.have.property(\"difficulty\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/charts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "charts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C02 - Charts for Non-Existent Song ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 404 Not Found\r",
+                  "pm.test(\"Status code is 404 Not Found\", function () {\r",
+                  "    pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response payload\r",
+                  "pm.test(\"Returns error details for missing song charts\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{non_existent_song_id}}/charts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{non_existent_song_id}}",
+                "charts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C03 - Charts for Unapproved Song ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for unapproved song charts\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response structure\r",
+                  "pm.test(\"Returns access denied error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{not_approved_song_id}}/charts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{not_approved_song_id}}",
+                "charts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C04 - Retrieve Song Charts Without Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized when token is missing\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns authorization error details\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/charts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "charts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C05 - Charts for Song in Unapproved Pack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for song inside unapproved pack\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response payload\r",
+                  "pm.test(\"Returns forbidden error message for unapproved parent pack\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{song_id_unapproved_pack}}/charts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{song_id_unapproved_pack}}",
+                "charts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C06 - Verify Existing SSC & Chart Hash",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify verification success response\r",
+                  "pm.test(\"Confirms existence for valid chart hash pair\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"isValid\", true);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{existent_ssc_hash}}\",\r\n  \"chartHash\": \"{{existent_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C07 - Verify Existing SSC Hash & Non-Existent Chart Hash",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify verification success response\r",
+                  "pm.test(\"Confirms existence for valid chart hash pair\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"isValid\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{existent_ssc_hash}}\",\r\n  \"chartHash\": \"{{non_existent_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C08- Verify Non-Existent SSC Hash & Existent Chart Hash",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify verification success response\r",
+                  "pm.test(\"Confirms existence for valid chart hash pair\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"isValid\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{non_existent_ssc_hash}}\",\r\n  \"chartHash\": \"{{existent_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C09 - Verify Existing SSC & Chart Hash Without Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized when token is missing\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response payload\r",
+                  "pm.test(\"Returns authentication error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"isValid\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{existent_ssc_hash}}\",\r\n  \"chartHash\": \"{{existent_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C10 - Verify Existing SSC & Chart Hash With Invalid JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized when token is missing\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response payload\r",
+                  "pm.test(\"Returns authentication error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"isValid\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_invalid_jwt_token}}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{existent_ssc_hash}}\",\r\n  \"chartHash\": \"{{existent_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C11 - Verify Hash for Pending Song in Approved Pack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for pending song\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns access denied error message for unapproved content\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"isValid\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{not_approved_ssc_hash}}\",\r\n  \"chartHash\": \"{{not_approved_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{not_approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{not_approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C12 - Verify Hash for Song in Unapproved Pack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for song in unapproved pack\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns access denied error message for unapproved parent pack\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"isValid\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{ssc_hash_unapproved_pack}}\",\r\n  \"chartHash\": \"{{chart_hash_unapproved_pack}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{song_id_unapproved_pack}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{song_id_unapproved_pack}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C13 - Verify Chart Hash Without Service Key Header",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden when secret key header is missing\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify specific service key error message\r",
+                  "pm.test(\"Returns missing service key error details\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_SECRET_KEY}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{existent_ssc_hash}}\",\r\n  \"chartHash\": \"{{existent_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C14 - Verify Chart Hash With Invalid Service Key Header",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden when secret key header is missing\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify specific service key error message\r",
+                  "pm.test(\"Returns missing service key error details\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-sscentral-secret-key",
+                "value": "{{SSCENTRAL_INVALID_SECRET_KEY}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"sscHash\": \"{{existent_ssc_hash}}\",\r\n  \"chartHash\": \"{{existent_chart_hash}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/songs/{{approved_song_id}}/verify-chart-hash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "songs",
+                "{{approved_song_id}}",
+                "verify-chart-hash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-C15 - Retrieve Song Charts With Invalid JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized when token is missing\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns authorization error details\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", false);\r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_invalid_jwt_token}}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/songs/{{approved_song_id}}/charts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "songs",
+                "{{approved_song_id}}",
+                "charts"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "This folder covers test cases for the **Song Charts & Hash Verification** endpoints of the SSCentral In-Game API.\n\nIt is split into two areas:\n\n**1\\. Song Charts (****`GET /api/v2/songs/:id/charts`****)**  \nValidates retrieval of chart and difficulty level data for a given song. Tests cover:\n\n- Successful retrieval for an approved song\n    \n- Edge cases: non-existent song ID, unapproved song, song belonging to an unapproved pack\n    \n- Authentication edge cases: missing JWT, invalid JWT\n    \n\n**2\\. Chart Hash Verification (****`POST /api/songs/:id/verify-chart-hash`****)**  \nValidates the SSC and chart hash verification mechanism used to confirm file integrity. Tests cover:\n\n- Successful verification of matching SSC and chart hashes\n    \n- Partial hash mismatches (valid SSC + invalid chart hash, and vice versa)\n    \n- Songs in unapproved or pending states\n    \n- Authentication and authorization edge cases: missing auth, invalid JWT, missing service key header, invalid service key header"
+    },
+    {
+      "name": "04 - Song Download",
+      "item": [
+        {
+          "name": "TC-D01 - Generate Secure Asset Download URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify download URL and metadata return values\r",
+                  "pm.test(\"Returns valid secure download URL and song metadata\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.have.property(\"download_url\");\r",
+                  "    pm.expect(responseData.download_url).to.be.a(\"string\").that.is.not.empty;\r",
+                  "    pm.expect(responseData).to.have.property(\"expires_in\", 300);\r",
+                  "    pm.expect(responseData).to.have.property(\"ssc_filename\");\r",
+                  "    pm.expect(responseData).to.have.property(\"ssc_hash\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/download?song_id={{approved_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "song_id",
+                  "value": "{{approved_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-D02 - Request Download Link with Invalid JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized for invalid token\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns unauthorized error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "    pm.expect(responseData.error).to.include(\"UNAUTHORIZED\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_invalid_jwt_token}}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/download?song_id={{approved_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "song_id",
+                  "value": "{{approved_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-D03 - Request Download Link Without Authentication",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 401 Unauthorized\r",
+                  "pm.test(\"Status code is 401 Unauthorized when token is missing\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message\r",
+                  "pm.test(\"Returns authentication error details\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/download?song_id={{approved_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "song_id",
+                  "value": "{{approved_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-D04 - Request Download Link for Non-Existent Song",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 404 Not Found\r",
+                  "pm.test(\"Status code is 404 Not Found\", function () {\r",
+                  "    pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response payload\r",
+                  "pm.test(\"Returns song not found error message\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/download?song_id={{non_existent_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "song_id",
+                  "value": "{{non_existent_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-D05 - Request Download Link for Unapproved Song",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for pending song\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message payload\r",
+                  "pm.test(\"Returns forbidden error message for unapproved content\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/download?song_id={{not_approved_song_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "song_id",
+                  "value": "{{not_approved_song_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-D06 - Request Download Link for Song in Unapproved Pack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 403 Forbidden\r",
+                  "pm.test(\"Status code is 403 Forbidden for song in unapproved pack\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error message payload\r",
+                  "pm.test(\"Returns forbidden error message for unapproved parent pack\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/download?song_id={{song_id_unapproved_pack}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "song_id",
+                  "value": "{{song_id_unapproved_pack}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "This folder contains test cases for the **Song Download** feature, specifically targeting the `/api/download` endpoint. It validates the generation of secure asset download URLs and covers a range of authentication and authorization scenarios, including:\n\n- **TC-D01** – Successful generation of a secure download URL for an approved song by an authenticated user.\n- **TC-D02** – Rejection of requests made with an invalid JWT token.\n- **TC-D03** – Rejection of requests made without any authentication.\n- **TC-D04** – Handling of download requests for non-existent songs.\n- **TC-D05** – Handling of download requests for songs that have not been approved.\n- **TC-D06** – Handling of download requests for songs belonging to an unapproved pack.\n\nTogether, these tests ensure that the download endpoint correctly enforces authentication, authorization, and content availability rules before issuing a download link."
+    },
+    {
+      "name": "05 - HUB & Community Packs",
+      "item": [
+        {
+          "name": "TC-E01 - Get HUB Feed Unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK for guest HUB feed\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify categorized feed\r",
+                  "pm.test(\"Returns categorized HUB feeds object\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    pm.expect(responseData).to.have.property(\"success\", true);\r",
+                  "    pm.expect(responseData).to.be.an(\"object\");\r",
+                  "});\r",
+                  "\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/hub",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "hub"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-E02 - Get All Community Song Packs (Default)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify pack array and pagination structure\r",
+                  "pm.test(\"Returns paginated packs data structure\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"data\").that.is.an(\"array\");\r",
+                  "    pm.expect(responseData).to.have.property(\"currentPage\", 1);\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\").that.is.a(\"boolean\");\r",
+                  "});\r",
+                  "\r",
+                  "// Test 3: Validate business rule (packs must have at least 5 songs)\r",
+                  "pm.test(\"All fetched packs have at least 5 songs\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    if (responseData.data && responseData.data.length > 0) {\r",
+                  "        responseData.data.forEach((pack) => {\r",
+                  "            pm.expect(pack.song_count).to.be.at.least(5);\r",
+                  "        });\r",
+                  "    }\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/packs/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "packs",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-E03 - Community Song Packs Pagination (Page 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK for page 2 query\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify currentPage reflects page 2\r",
+                  "pm.test(\"Response confirms currentPage is 2\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"data\").that.is.an(\"array\");\r",
+                  "    pm.expect(responseData).to.have.property(\"currentPage\", 2);\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\").that.is.a(\"boolean\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/packs/all?page=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "packs",
+                "all"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-E04 - Out-of-Bounds High Page Index Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK for out-of-bounds page\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify data array is empty and hasMore is false\r",
+                  "pm.test(\"Returns empty data array and hasMore is false\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"data\").that.is.an(\"array\").that.is.empty;\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\", false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/packs/all?page=999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "packs",
+                "all"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "999999"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-E05 - Invalid Negative Page Parameter Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 400 Bad Request\r",
+                  "pm.test(\"Status code is 400 Bad Request for negative page number\", function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify error response payload\r",
+                  "pm.test(\"Returns validation error details\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"error\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{player1_jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/packs/all?page=-1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "packs",
+                "all"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "-1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-E06 - Get Community Song Packs Unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: HTTP Status Code is 200 OK\r",
+                  "pm.test(\"Status code is 200 OK for guest pack list request\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// Test 2: Verify packs data structure returned for guests\r",
+                  "pm.test(\"Returns public packs array and pagination metadata\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property(\"data\").that.is.an(\"array\");\r",
+                  "    pm.expect(responseData).to.have.property(\"currentPage\", 1);\r",
+                  "    pm.expect(responseData).to.have.property(\"hasMore\").that.is.a(\"boolean\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/packs/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "packs",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "This folder contains test cases for the **HUB Feed** and **Community Song Packs** features of the SSCentral In-Game API.\n\nIt covers two endpoints:\n\n**1\\. HUB Feed (****`GET /api/v2/hub`****)**  \nValidates retrieval of the HUB activity feed. Tests cover:\n\n- Fetching the feed without authentication (TC-E01)\n    \n\n**2\\. Community Song Packs (****`GET /api/v2/packs/all`****)**  \nValidates listing and browsing of all community-submitted song packs. Tests cover:\n\n- Default retrieval of all packs (TC-E02)\n    \n- Pagination — standard page navigation, out-of-bounds page index, and invalid negative page values (TC-E03 to TC-E05)\n    \n- Unauthenticated access to the packs listing (TC-E06)\n    \n\nTogether, these tests ensure that the HUB feed and community pack browsing endpoints handle both normal usage and edge cases correctly, including authentication enforcement and pagination boundary conditions."
+    }
+  ]
+}
