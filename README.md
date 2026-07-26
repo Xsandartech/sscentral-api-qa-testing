@@ -1,4 +1,4 @@
-# SSCentral API - QA Audit & Automation Suite
+# SSCentral API - Automated API Testing & QA Documentation
 
 ![Postman](https://img.shields.io/badge/Postman-FF6C37?style=for-the-badge&logo=postman&logoColor=white) ![Newman](https://img.shields.io/badge/Newman-28A745?style=for-the-badge&logo=node.js&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-222222?style=for-the-badge&logo=github&logoColor=white)
 
