@@ -1,6 +1,6 @@
 # Defect Report & Failure Analysis
 
-This document describes five representative issues found during the initial QA audit of the **SSCentral backend API (In-Game Module)**.
+This document summarizes the failure analysis performed during Stage 2 of the QA workflow, where failed assertions were reviewed to distinguish actual API defects from test design issues.
 
 The selected cases include **four actual API defects** and **one test assertion mismatch** found during the review of the failed tests.
 

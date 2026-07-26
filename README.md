@@ -8,9 +8,18 @@ SSCentral is the backend platform supporting the mobile rhythm game ***[FiveStep
 
 ---
 
-## 📊 Audit & Regression Results Summary
+## 📊 QA Workflow
 
-The QA cycle consisted of an initial baseline audit followed by failure analysis, bug fixes, and a full regression test run.
+The QA cycle followed four sequential stages:
+
+1. Initial Baseline Audit — Execute the complete automated test suite to establish the baseline.
+2. Failure Analysis — Review each failed assertion to determine whether it was caused by an API defect or by an issue in the automated test.
+3. Defect Remediation — Fix backend defects and update incorrect test assertions.
+4. Regression Validation — Re-run the complete suite to verify all fixes and ensure no regressions were introduced.
+
+---
+
+## 📈 Execution Results Summary
 
 | Test Metric | Initial Baseline Run | Final Regression Run |
 | :--- | :---: | :---: |
@@ -25,7 +34,7 @@ The QA cycle consisted of an initial baseline audit followed by failure analysis
 
 ## 🖼️ Newman Execution Dashboards
 
-### Phase 1: Initial Baseline Audit (46 Failures Identified)
+### Initial Baseline Run
 During the initial test execution, 46 assertions failed out of 137 due to backend defects and test assertion mismatches.
 
 ![Initial Audit Newman Summary](assets/initial-run-summary.jpg)
@@ -34,7 +43,7 @@ During the initial test execution, 46 assertions failed out of 137 due to backen
 
 ---
 
-### Phase 2: Final Regression Run (100% Pass Rate)
+### Final Regression Run
 After fixing backend bugs and updating test script assertions, the full regression suite was executed, achieving a 100% pass rate.
 
 ![Regression Run Newman Summary](assets/regression-run-summary.jpg)

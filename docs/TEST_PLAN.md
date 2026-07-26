@@ -119,9 +119,9 @@ The goal was to confirm that:
 
 ## 5. Test Execution Workflow
 
-The project followed a two-phase testing cycle.
+The project followed a four-stage testing workflow.
 
-### Phase 1 — Initial Audit (Baseline)
+### Stage 1 — Initial Baseline Audit
 
 The Postman collection was executed against the initial version of the local API.
 
@@ -132,7 +132,7 @@ The baseline execution included:
 * **91 passed assertions**
 * **46 failed assertions**
 
-### Phase 2 — Failure Analysis
+### Stage 2 — Failure Analysis
 
 Each failed assertion was reviewed to determine the cause of the failure.
 
@@ -143,7 +143,7 @@ The failures were classified into two main groups:
 
 This analysis helped separate real API problems from issues in the test suite itself.
 
-### Phase 3 — Remediation
+### Stage 3 — Defect Remediation
 
 The identified issues were addressed based on their cause:
 
@@ -151,7 +151,7 @@ The identified issues were addressed based on their cause:
 * Incorrect test assertions were updated to match the expected API behavior.
 * Test cases were reviewed to make sure they were stable and based on valid test data.
 
-### Phase 4 — Regression Run
+### Stage 4 — Regression Validation
 
 The complete Postman collection was executed again using Newman CLI.
 
